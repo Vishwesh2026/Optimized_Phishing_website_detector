@@ -255,8 +255,16 @@ def main() -> None:
 
     # 11. Save metrics JSON
     METRICS_JSON.parent.mkdir(parents=True, exist_ok=True)
-    METRICS_JSON.write_text(json.dumps(metrics, indent=2))
+    metrics_str = json.dumps(metrics, indent=2)
+    METRICS_JSON.write_text(metrics_str)
     logger.info("Saved eval metrics: %s", METRICS_JSON)
+
+    # 11b. Save timestamped experiment file
+    run_filename = f"deep_run_{metrics['trained_at']}.json"
+    run_path = METRICS_JSON.parent / run_filename
+    run_path.write_text(metrics_str)
+    logger.info("Saved timestamped run: %s", run_path)
+
     logger.info("=" * 65)
     logger.info("Training complete! Metrics summary:")
     for k, v in metrics.items():

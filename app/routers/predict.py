@@ -294,23 +294,65 @@ async def health_check(svc: EnsembleService = Depends(get_ensemble_service)) -> 
 @router.get(
     "/api/v1/metrics",
     status_code=status.HTTP_200_OK,
-    summary="Latest XGBoost training metrics",
+    summary="Get training metrics (supports multiple experiment runs)",
     tags=["Operations"],
 )
-async def get_metrics() -> dict:
-    metrics_path = settings.EXPERIMENTS_DIR / "metrics_clean.json"
-    if not metrics_path.exists():
+async def get_metrics(run_id: Optional[str] = None) -> dict:
+    """
+    Returns training metrics.
+    If run_id is omitted, returns a list of available runs and the latest clean metrics.
+    If run_id is provided, returns the specific JSON content for that experiment.
+    """
+    if not settings.EXPERIMENTS_DIR.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Metrics not available. Run training/train_deep_clean.py first.",
+            detail="Experiments directory not found.",
         )
+
+    # 1. List all available JSON files
+    runs = [f.stem for f in settings.EXPERIMENTS_DIR.glob("*.json")]
+
+    if run_id is None:
+        # Load latest metrics_clean.json as default if it exists
+        latest_data = {}
+        target = settings.EXPERIMENTS_DIR / "metrics_clean.json"
+        if target.exists():
+            with open(target) as f:
+                latest_data = json.load(f)
+
+        # Normalization: ensure 'f1' exists
+        if "f1_score" in latest_data and "f1" not in latest_data:
+            latest_data["f1"] = latest_data["f1_score"]
+
+        # Merge for backwards compatibility with the UI
+        return {
+            **latest_data,
+            "available_runs": sorted(runs, reverse=True),
+            "message": "Specify ?run_id=<name> to get full details for a specific run."
+        }
+
+    # 2. Return specific run details
+    target_path = settings.EXPERIMENTS_DIR / f"{run_id}.json"
+    if not target_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Experiment '{run_id}' not found. Available: {', '.join(runs)}",
+        )
+
     try:
-        with open(metrics_path) as f:
-            return json.load(f)
+        with open(target_path) as f:
+            data = json.load(f)
+            # Normalization: ensure 'f1' exists even if the source uses 'f1_score'
+            if "f1_score" in data and "f1" not in data:
+                data["f1"] = data["f1_score"]
+            elif "metrics" in data and "f1" in data["metrics"]:
+                # Flatten or ensure top-level f1 for consistency
+                data["f1"] = data["metrics"]["f1"]
+            return data
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to read metrics file.",
+            detail=f"Failed to read experiment file: {exc}",
         ) from exc
 
 

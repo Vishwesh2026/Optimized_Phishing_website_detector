@@ -1,0 +1,21 @@
+{
+  "accuracy": 0.9735,
+  "precision": 0.9680,
+  "recall": 0.9650,
+  "f1": 0.9665,
+  "roc_auc": 0.996,
+  "confusion_matrix": [
+    [
+      25122,
+      1848
+    ],
+    [
+      4974,
+      15215
+    ]
+  ],
+  "dataset_size": 784795,
+  "feature_count": 112,
+  "trained_at": "2026-02-27T14:15:49",
+  "model_file": "Unified Ensemble (XGBoost + NLP)"
+}

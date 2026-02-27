@@ -55,3 +55,6 @@ Desktop.ini
 # Logs
 *.log
 logs/
+
+# Large project libraries or datasets
+YEAR/
