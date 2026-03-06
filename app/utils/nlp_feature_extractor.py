@@ -25,6 +25,33 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
+# ── Shared Tokenizer ──────────────────────────────────────────────────────────
+# Defined here (not in training scripts) so joblib can find it on deserialization
+# when loading vectorizer.pkl from any context (train, evaluate, or API).
+
+class URLTokenizer:
+    """
+    Bag-of-Words tokenizer for URL strings.
+    Splits on non-word characters and optionally applies Snowball stemming.
+    Must be defined at module level for joblib pickle compatibility.
+    """
+    def __init__(self):
+        try:
+            from nltk.stem.snowball import SnowballStemmer
+            self._stemmer = SnowballStemmer("english")
+        except Exception:
+            self._stemmer = None
+
+    def __call__(self, url: str) -> list[str]:
+        import re
+        tokens = re.split(r"\W+", str(url))
+        tokens = [t for t in tokens if t]
+        if self._stemmer:
+            tokens = [self._stemmer.stem(t) for t in tokens]
+        return tokens
+
+
+
 class NLPModelBundle:
     """
     Holds the Bag-of-Words vectorizer + Logistic Regression classifier

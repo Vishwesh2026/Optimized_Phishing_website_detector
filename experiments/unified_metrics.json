@@ -1,0 +1,63 @@
+{
+  "model_file": "Unified Ensemble (XGBoost + NLP)",
+  "ensemble_weights": {
+    "xgb": 0.7,
+    "nlp": 0.3
+  },
+  "threshold": 0.45,
+  "dataset_size": 47159,
+  "feature_count": 111,
+  "trained_at": "2026-03-05T22:34:07",
+  "accuracy": 0.842,
+  "precision": 0.8366,
+  "recall": 0.784,
+  "f1": 0.8095,
+  "f1_score": 0.8095,
+  "roc_auc": 0.9035,
+  "confusion_matrix": [
+    [
+      23879,
+      3091
+    ],
+    [
+      4361,
+      15828
+    ]
+  ],
+  "component_metrics": {
+    "xgboost": {
+      "accuracy": 0.8512,
+      "precision": 0.8341,
+      "recall": 0.8144,
+      "f1": 0.8241,
+      "roc_auc": 0.9285,
+      "confusion_matrix": [
+        [
+          23699,
+          3271
+        ],
+        [
+          3747,
+          16442
+        ]
+      ]
+    },
+    "nlp": {
+      "accuracy": 0.5303,
+      "precision": 0.4397,
+      "recall": 0.3543,
+      "f1": 0.3924,
+      "roc_auc": 0.509,
+      "confusion_matrix": [
+        [
+          17858,
+          9112
+        ],
+        [
+          13037,
+          7152
+        ]
+      ]
+    }
+  }
+}

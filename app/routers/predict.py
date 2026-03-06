@@ -67,10 +67,56 @@ _INFRA_FIELDS = [
 
 # ── Core analysis helper ──────────────────────────────────────────────────────
 
-async def _run_analysis(url: str, svc: EnsembleService) -> dict:
+async def _run_analysis(url: str, svc: EnsembleService, is_root_check: bool = False) -> dict:
     """
-    Extract features + run ensemble model + fetch WHOIS concurrently.
-    Never raises — degrades gracefully on infra/WHOIS failures.
+    Unified entry point for URL analysis with 'Root-Domain-First' logic.
+    For deep URLs (with paths/params), it checks the base domain first
+    and inherits its verdict, as per the user's assumption that subdirectories
+    inherit the legitimacy of the main site.
+    """
+    from app.utils.url_normalizer import normalize_url
+    from urllib.parse import urlparse
+
+    norm_url = normalize_url(url)
+    parsed = urlparse(norm_url)
+
+    # 1. Determine the base URL (protocol + netloc)
+    base_url = f"{parsed.scheme}://{parsed.netloc}"
+    norm_base = normalize_url(base_url)
+
+    # 2. Check if we are currently at the root or already in a root-check recursion
+    # We ignore the distinction between domain.com and domain.com/
+    is_at_root = norm_url.rstrip("/") == norm_base.rstrip("/")
+
+    # 3. If we are deep and NOT already doing a root check, check the root first
+    if not is_at_root and not is_root_check:
+        logger.info("Deep URL detected: %s. Checking base domain first: %s", norm_url, norm_base)
+        root_result = await _run_analysis(norm_base, svc, is_root_check=True)
+
+        # If the root has a valid prediction, we'll use it but still run the core analysis
+        # for the deep URL to extract its specific infrastructure/WHOIS metadata for the UI (if needed).
+        # Note: we use core analysis ONLY for features, but override the verdict.
+        current_result = await _run_analysis_core(norm_url, svc)
+
+        # APPLY OVERRIDE: Inherit verdict from root domain
+        # The user's idea: if root is legit, subfolders are legit. If root is phish, subfolders are phish.
+        current_result["prediction"] = root_result["prediction"]
+        current_result["label"]      = root_result["label"]
+        current_result["confidence"] = root_result["confidence"]
+        current_result["risk_level"] = root_result["risk_level"]
+        current_result["ensemble_breakdown"] = root_result.get("ensemble_breakdown")
+        current_result["reason"] = f"Inherited prediction from base domain: {norm_base}"
+
+        return current_result
+
+    # 4. Otherwise (at root or root-check), perform standard core analysis
+    return await _run_analysis_core(norm_url, svc)
+
+
+async def _run_analysis_core(norm_url: str, svc: EnsembleService) -> dict:
+    """
+    Internal helper that performs the actual feature extraction and ML inference.
+    Extracted from _run_analysis to support the root-inherit logic.
     """
     if not svc.is_loaded:
         raise HTTPException(
@@ -82,9 +128,9 @@ async def _run_analysis(url: str, svc: EnsembleService) -> dict:
 
     # Fast-path: circuit breaker at capacity
     if sem._value == 0:
-        logger.warning("Circuit breaker TRIPPED for %s", url)
+        logger.warning("Circuit breaker TRIPPED for %s", norm_url)
         return {
-            "url": url,
+            "url": norm_url,
             "prediction": "unknown",
             "label": -1,
             "confidence": 0.0,
@@ -99,11 +145,9 @@ async def _run_analysis(url: str, svc: EnsembleService) -> dict:
 
     async with sem:
         from app.utils.deep_feature_extractor import extract as extract_features
-        from app.utils.url_normalizer import normalize_url
         from app.services.dns_guard import domain_exists
         from urllib.parse import urlparse
 
-        norm_url = normalize_url(url)
         t_start  = time.perf_counter()
 
         parsed = urlparse(norm_url)
@@ -114,7 +158,7 @@ async def _run_analysis(url: str, svc: EnsembleService) -> dict:
             total_ms = round((time.perf_counter() - t_start) * 1000, 2)
             logger.info("Blocking %s — domain does not exist (NXDOMAIN)", norm_url)
             return {
-                "url": url,
+                "url": norm_url,
                 "prediction": "invalid",
                 "label": 1,
                 "confidence": 1.0,
@@ -136,18 +180,18 @@ async def _run_analysis(url: str, svc: EnsembleService) -> dict:
         )
 
         if isinstance(feature_dict, Exception):
-            logger.error("Feature extraction failed for %s: %s", url, feature_dict)
+            logger.error("Feature extraction failed for %s: %s", norm_url, feature_dict)
             feature_dict = {}
 
         if isinstance(whois_result, Exception):
-            logger.warning("WHOIS failed for %s: %s", url, whois_result)
+            logger.warning("WHOIS failed for %s: %s", norm_url, whois_result)
             whois_result = {"whois_available": False, "error": str(whois_result)}
 
         # ── Ensemble inference (CPU-bound, run in thread) ─────────────────────
         try:
             ml_result = await asyncio.to_thread(svc.predict, feature_dict, norm_url)
         except Exception as exc:
-            logger.exception("Ensemble inference failed for %s: %s", url, exc)
+            logger.exception("Ensemble inference failed for %s: %s", norm_url, exc)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Model inference failed: {exc}",
@@ -158,7 +202,7 @@ async def _run_analysis(url: str, svc: EnsembleService) -> dict:
         infra_dict = {k: feature_dict.get(k) for k in _INFRA_FIELDS} if feature_dict else {}
 
         return {
-            "url":                url,
+            "url":                norm_url,
             "prediction":         ml_result["prediction"],
             "label":              ml_result["label"],
             "confidence":         ml_result["confidence"],
@@ -170,6 +214,7 @@ async def _run_analysis(url: str, svc: EnsembleService) -> dict:
             "latency_ms":         total_ms,
             "model_version":      "ensemble-v1",
         }
+
 
 
 # ── POST /api/v1/analyze ──────────────────────────────────────────────────────

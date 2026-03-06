@@ -62,8 +62,8 @@ async def main() -> None:
     t0 = time.perf_counter()
 
     for idx, row in df.iterrows():
-        url = row['url']
-        label = 1 if row['label'] == 'bad' else 0
+        url = row['URL']
+        label = 1 if row['Label'].lower() == 'bad' else 0
         
         try:
             # Extract features (Project 2 logic)

@@ -16,7 +16,7 @@ pydantic-settings==2.7.0
 python-dotenv==1.0.1
 
 # ── ML Core (shared) ──────────────────────────────────────────
-scikit-learn==1.6.0
+scikit-learn==1.1.2
 numpy==1.26.4
 pandas==2.2.3
 scipy==1.14.1
