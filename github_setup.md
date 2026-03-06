@@ -40,4 +40,4 @@ git push -u origin main
 
 ## Important Notes:
 - **Environment Variables:** The `.env` file contains configuration and is **ignored** by Git for security. You will need to manually recreate it or share it securely if others work on the project.
-- **Large Files:** If your model files (`.pkl`) are very large, Git might warn you. For files >50MB, it's recommended to use [Git LFS](https://git-lfs.github.com), but for standard scikit-learn/XGBoost models, it usually works fine.
+- **Large Files & Git LFS:** The new `phishing_deep_clean_v1.pkl` contains a **VotingClassifier Ensemble** combining 5 different models (Logistic Regression, LinearSVC, RandomForest, HistGradientBoosting, XGBoost). This makes the `.pkl` file substantially larger than previous single-model iterations. If the file exceeds GitHub's 100MB strict limit, you **must** use [Git LFS](https://git-lfs.github.com) to successfully track and push the `models/` directory.

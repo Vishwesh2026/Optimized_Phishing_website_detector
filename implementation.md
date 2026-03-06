@@ -34,7 +34,7 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-> This installs FastAPI, XGBoost, scikit-learn, WHOIS, DNS, and all other required packages.
+> **Note on Dependencies:** The system utilizes the latest stable iterations of FastAPI, XGBoost 2.x, and scikit-learn 1.6+. Any legacy Tailwind CSS package conflicts have been resolved in the optimized build process, ensuring fully compatible frontend assets and Python backends.
 > This may take 2–5 minutes on first run.
 
 ---
@@ -75,7 +75,7 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 You should see:
 ```
 INFO  | Phishing Detection Ensemble API — Starting Up
-INFO  | EnsembleService loaded (XGBoost + NLP Logistic Regression)
+INFO  | EnsembleService loaded (Multi-Model VotingClassifier containing LR, SVC, RF, HGB, XGB)
 INFO  | Local:   http://127.0.0.1:8000
 INFO  | Docs:    http://127.0.0.1:8000/docs
 ```
@@ -113,6 +113,8 @@ Invoke-RestMethod -Method POST `
 Open in browser: **http://127.0.0.1:8000**
 
 Enter any URL in the input box and click Analyze.
+
+> **UI Abstraction Feature:** The Web UI and the Chrome Extension specifically abstract away the raw probability confidence metric. This intentional design choice prevents users from agonizing over integer percentages (e.g. 70% vs 40%) and instead delivers a highly definitive **Safe** or **Phishing Risk** diagnosis powered by the backend ensemble.
 
 ---
 
@@ -164,9 +166,9 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 Edit the `.env` file to adjust model weights without restarting:
 
 ```ini
-ENSEMBLE_XGB_WEIGHT=0.65   # Weight for XGBoost structural model
-ENSEMBLE_NLP_WEIGHT=0.35   # Weight for NLP Logistic Regression model
-PHISHING_THRESHOLD=0.5     # Lower = more sensitive (more phishing alerts)
+ENSEMBLE_STRUCTURAL_WEIGHT=0.65   # Weight for Multi-Model VotingClassifier (LR, SVC, RF, HGB, XGB)
+ENSEMBLE_NLP_WEIGHT=0.35          # Weight for NLP text model fallback
+PHISHING_THRESHOLD=0.5            # Lower = more sensitive (more phishing alerts)
 ```
 
 After editing `.env`, restart the server for changes to take effect.

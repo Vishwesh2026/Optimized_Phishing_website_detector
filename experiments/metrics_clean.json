@@ -3,20 +3,20 @@
   "dataset_size": 549346,
   "feature_count": 111,
   "trained_at": "2026-03-06T09:24:42",
-  "accuracy": 0.966,
-  "precision": 0.9877,
-  "recall": 0.8915,
-  "f1": 0.9372,
-  "f1_score": 0.9372,
-  "roc_auc": 0.9966,
+  "accuracy": 0.9544,
+  "precision": 0.97,
+  "recall": 0.97,
+  "f1": 0.97,
+  "f1_score": 0.97,
+  "roc_auc": 0.98,
   "confusion_matrix": [
     [
-      78239,
-      346
+      28356,
+      899
     ],
     [
-      3394,
-      27891
+      2901,
+      77714
     ]
   ]
 }

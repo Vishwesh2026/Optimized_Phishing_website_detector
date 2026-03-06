@@ -6,7 +6,8 @@
 [![Docker](https://img.shields.io/badge/Deployment-Docker-2496ed.svg?style=flat&logo=docker)](https://www.docker.com/)
 
 > **Production-grade, Infrastructure-Aware ML API** for real-time phishing URL detection.  
-> Combines deterministic DNS Guard checks with a unified ensemble model (Calibrated XGBoost + Logistic Regression NLP).
+> Combines deterministic DNS Guard checks with a robust **Multi-Model Voting Classifier Ensemble** (integrating Logistic Regression, LinearSVC, RandomForest, HistGradientBoosting, and Calibrated XGBoost).  
+> Features a Research-Grade ML Training framework emphasizing high recall (>0.85 precision) and an abstracted, definitive Safe/Phishing user interface.
 
 ---
 
@@ -22,20 +23,20 @@ phishing-detection/
 │   ├── routers/
 │   │   └── predict.py                 ← /api/v1/analyze, /api/v1/metrics, /health
 │   ├── services/
-│   │   ├── ensemble_service.py        ← Unified Weighted Soft-Voting (XGBoost + NLP)
+│   │   ├── ensemble_service.py        ← Unified Multi-Model VotingClassifier Inference
 │   │   ├── xgb_service.py             ← XGBoost inference logic + drift guard
 │   │   ├── dns_guard.py               ← Deterministic NXDOMAIN pre-check
 │   │   └── whois_service.py           ← RDAP WHOIS lookups & DomainInfo
 │   ├── schemas/
 │   │   └── prediction_schema.py       ← Pydantic v2 schemas (incl. invalid state)
 │   └── utils/
-│       ├── deep_feature_extractor.py  ← 111 features for XGBoost: Lexical + DNS + SSL + WHOIS
+│       ├── deep_feature_extractor.py  ← 111 features for ML Models: Lexical + DNS + SSL + WHOIS
 │       ├── nlp_feature_extractor.py   ← Bag-of-Words text extractor for NLP
 │       └── url_normalizer.py          ← Canonical URL form (trailing slashes, case)
 ├── models/
-│   ├── phishing_deep_clean_v1.pkl     ← Model A: Active XGBoost (Structural 111-features)
-│   ├── deep_feature_cols_clean.json   ← Feature list for the clean XGBoost model
-│   ├── phishing.pkl                   ← Model B: Logistic Regression (NLP Text Model)
+│   ├── phishing_deep_clean_v1.pkl     ← Final Multi-Model VotingClassifier (LR, SVC, RF, HGB, XGB)
+│   ├── deep_feature_cols_clean.json   ← Feature list for the clean ensemble models
+│   ├── phishing.pkl                   ← Target NLP Text Model fallback
 │   └── vectorizer.pkl                 ← Bag-of-Words NLP vectorizer
 ├── training/
 │   ├── generate_training_dataset.py   ← Phase 1: Extract features from 200k+ URLs  ← NEW
@@ -77,13 +78,16 @@ URL submitted
      │           All run concurrently via asyncio.gather with 15s timeout
      │
      ▼ Step 4 — ML Inference (ensemble_service.py)         ← PROBABILISTIC
-     │  Model A: XGBoost evaluates the 111 structural features.
-     │  Model B: Logistic Regression evaluates tokenized URL n-grams.
-     │  Ensemble: Weighted soft-voting combines both probabilities.
+     │  Multi-Model Ensemble analyzes the 111 structural features alongside NLP tokens.
+     │  Evaluates via a VotingClassifier (Logistic Regression, LinearSVC, RandomForest, 
+     │  HistGradientBoosting, XGBoost) instead of StackingClassifier for optimal 
+     │  Scikit-Learn 1.6 compatibility.
      │
      ▼ Step 5 — Risk Mapping & Response
         prob ≥ 0.85 → HIGH   |  prob ≥ 0.65 → MEDIUM  |  else → LOW
-        Pydantic validates response shape and returns JSON
+        Pydantic validates response shape and returns JSON to the Dashboard.
+        *UI Implementation Note*: Exact percentages are abstracted/hidden from 
+        the user to provide definitive, non-confusing Safe/Phishing verdicts.
 ```
 
 ---
@@ -219,9 +223,13 @@ Output: `Dataset/generated_training_dataset_clean.csv`
 python -m training.train_deep_clean
 ```
 - Stratified **70% train / 10% calibration / 20% test** split
-- XGBoost (400 trees, depth=6) + `IsotonicRegression` calibration (prefit pattern —  
-  avoids sklearn 1.7 / XGBoost 2.x `__sklearn_tags__` incompatibility)
-- Prints full metrics; saves model + feature list
+- Deploys a **9-Phase Research-Grade ML Pipeline** to systematically train a comparison
+  of models and output a final `VotingClassifier`.
+- Includes training for `LogisticRegression`, `LinearSVC`, `RandomForest`, 
+  `HistGradientBoosting`, and `XGBoost`.
+- Avoids scikit-learn 1.6 / XGBoost 2.x `__sklearn_tags__` attribute compatibility
+  issues by migrating from `StackingClassifier` to `VotingClassifier`.
+- Prints full metrics; saves ensemble models + feature list.
 
 Output: `models/phishing_deep_clean_v1.pkl`, `experiments/metrics_clean.json`
 

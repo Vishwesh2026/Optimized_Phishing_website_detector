@@ -1,6 +1,7 @@
 # ─────────────────────────────────────────────────────────────
 # requirements.txt — Merged Ensemble Phishing Detection API
 # Union of Project 1 (NLP/BoW) + Project 2 (XGBoost deep model)
+# Compatible with Python 3.11
 # ─────────────────────────────────────────────────────────────
 
 # ── Web Framework ─────────────────────────────────────────────
@@ -16,13 +17,13 @@ pydantic-settings==2.7.0
 python-dotenv==1.0.1
 
 # ── ML Core (shared) ──────────────────────────────────────────
-scikit-learn==1.1.2
+scikit-learn==1.4.2
 numpy==1.26.4
 pandas==2.2.3
 scipy==1.14.1
 joblib==1.4.2
 
-# ── Gradient Boosting (Project 2 — XGBoost) ──────────────────
+# ── Gradient Boosting (Project 2 — XGBoost) ───────────────────
 xgboost==2.1.3
 
 # ── Imbalanced Learning ───────────────────────────────────────
