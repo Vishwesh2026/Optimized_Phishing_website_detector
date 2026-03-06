@@ -6,21 +6,23 @@ This guide explains how to use, maintain, and retrain the phishing detection sys
 
 ## 🌓 1. The Ensemble Model Architecture 🚀
 
-The system utilizes a unified **Ensemble Service** combining two distinct models recursively via weighted soft-voting.
+The system utilizes a unified **Ensemble Service** combining an array of algorithmic approaches via weighted soft-voting.
 
-### 🌳 Model A: Structural & Infrastructure (XGBoost)
-*   **Active as:** models/phishing_deep_clean_v1.pkl files.
+### 🌳 Model A: The Research-Grade Multi-Model Ensemble (VotingClassifier)
+*   **Active as:** `models/phishing_deep_clean_v1.pkl` files.
 *   **Best for:** Deep-path phishing URLs and complex structural analysis.
-*   **Features:** 111 Structural and infrastructure metrics.
+*   **Models Included:** Logistic Regression, LinearSVC, RandomForest, HistGradientBoosting, and XGBoost.
+*   **Implementation Note:** We utilize a 9-Phase ML pipeline extracting 111 structural features. We bypassed `StackingClassifier` in favor of `VotingClassifier` to prevent `__sklearn_tags__` attribute compatibility crashes strictly tied to scikit-learn 1.6 and XGBoost 2.x.
 *   **Weight:** Default 65% contribution.
 
-### 📝 Model B: Lexical Text (Logistic Regression NLP)
-*   **Active as:** models/phishing.pkl & models/vectorizer.pkl files.
+### 📝 Model B: Lexical Text (Logistic Regression NLP Fallback)
+*   **Active as:** `models/phishing.pkl` & `models/vectorizer.pkl` files.
 *   **Best for:** Rapid assessment of raw text utilizing a Bag-of-Words paradigm.
 *   **Weight:** Default 35% contribution.
 
 > **💡 How the Fusion Works:**
-> The EnsembleService receives a URL, extracts infrastructure tokens for Model A, extracts raw text n-grams for Model B, multiplies both outputs by their configured weights (.env), and outputs a consolidated risk probability.
+> The EnsembleService receives a URL, extracts infrastructure tokens for Model A, extracts raw text n-grams for Model B, multiplies both outputs by their configured weights (.env), and outputs a consolidated JSON structure. 
+> 🛑 *UI Interaction:* Note that while mathematical confidences are generated, the frontend UI deliberately hides the raw percentage, converting it into a definitively explicit "Safe" or "Phishing" verdict to elevate user intuition.
 ---
 
 ## 🏃 2. Everyday Usage
@@ -82,7 +84,7 @@ python -m training.validate_clean_model
 
 1.  **DNS Guard (Deterministic):** Before the ML runs, it checks if the domain actually exists. If it returns NXDOMAIN, the URL is blocked immediately as "Invalid".
 2.  **Feature Extraction:** Extracts 111 numeric signals (structural logic) alongside raw URL character ingestion (NLP logic).
-3.  **Ensemble ML Inference:** A weighted soft-voting fusion runs XGBoost and Logistic Regression simultaneously. If the final combined probability > 85%, it flags it as **High Risk**.
+3.  **Ensemble ML Inference:** A weighted soft-voting fusion runs the structural VotingClassifier (LR, SVC, RF, HGB, XGB) and target text NLP processing simultaneously. If the final combined probability > 85%, it flags it as **High Risk**. The frontend dashboard reads this JSON payload, masking the numerical probability to visually represent only the core Risk state metric.
 ## 🏁 6. Quick Verification
 
 After setting up, verify your system by running these checks:

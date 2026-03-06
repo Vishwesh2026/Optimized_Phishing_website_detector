@@ -56,8 +56,8 @@ function renderResult(data) {
     const verdictSub = isInvalid
         ? "Domain does not resolve (NXDOMAIN)"
         : isSafe
-            ? `${confidencePct}% confidence — No threat detected`
-            : `${confidencePct}% phishing probability`;
+            ? `No threat detected`
+            : `Phishing probability`;
 
     // ── WHOIS section ────────────────────────────────────────────────────────
     const di = data.domain_info;
@@ -100,7 +100,7 @@ function renderResult(data) {
                 ${data.url?.length > 60 ? data.url.slice(0, 80) + "…" : (data.url ?? "")}
             </div>
 
-            <div class="confidence-section">
+            <div class="confidence-section" style="display: none;">
                 <div class="confidence-label">
                     <span>Confidence Score</span>
                     <span class="confidence-value">${confidencePct}%</span>

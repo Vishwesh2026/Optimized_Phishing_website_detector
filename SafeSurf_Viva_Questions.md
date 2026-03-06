@@ -116,8 +116,11 @@ Legitimate domains rarely contain multiple hyphens. Attackers utilize hyphens to
 
 ## Section 4: Machine Learning Model
 
-**1. Why was an Ensemble model chosen for this project instead of simply XGBoost?**
-XGBoost is highly optimized for structural patterns, but struggles with purely lexical analysis of raw string variations. By fusing XGBoost with an NLP Logistic Regression model via weighted soft-voting, the system gains the exact, rapid text awareness of Bag-of-Words while preserving the deep 111-feature network robustness of XGBoost.
+**1. Why was a Multi-Model Ensemble chosen for this project instead of simply XGBoost?**
+XGBoost is highly optimized for structural patterns, but relying on a single algorithm creates blind spots. By utilizing a VotingClassifier Ensemble (integrating Logistic Regression, LinearSVC, RandomForest, HistGradientBoosting, and XGBoost), the system achieves a Research-Grade balance. It maintains high precision while drastically increasing recall by combining the strengths of linear, tree-based, and gradient-boosting approaches.
+
+**1b. Why did the project migrate from StackingClassifier to VotingClassifier?**
+The migration was enacted to resolve strict `AttributeError` compatibility issues between Scikit-learn 1.6+ and XGBoost 2.x regarding the internal `__sklearn_tags__` routing system. `VotingClassifier` provided identical ensemble capability without triggering the breaking API wrapper changes.
 
 **2. What is gradient boosting?**
 Gradient boosting is an ensemble technique where multiple weak predictive models, typically decision trees, are built sequentially. Each new tree is specifically trained to correct the residual errors made by the combination of all previous trees.
@@ -194,6 +197,9 @@ Latency reporting allows administrators to monitor the performance of external a
 **10. What is the purpose of the threshold value defined in the configuration file?**
 The threshold determines the strict percentage boundary separating safe verdicts from phishing verdicts. Exposing this as a configuration variable allows administrators to tune the sensitivity of the system at runtime without needing to recompile or retrain the mathematical model.
 
+**11. Why does the Web UI and Chrome Extension explicitly hide the final confidence percentage from the end user?**
+Confidence percentages are mathematical probabilities, not definitive safety guarantees. Displaying "52% Safe" creates severe user anxiety and hesitation, undermining the tool's purpose. Abstracting the math isolates the technical ML reality from the user, presenting them with a definitive, actionable decision: "Safe" or "Phishing Risk".
+
 
 ## Section 6: Training Pipeline
 
@@ -260,8 +266,8 @@ Modern dynamic websites load resources concurrently, which can rapidly trigger m
 **1. Scenario: You test google dot com and the dashboard returns a red phishing HIGH risk verdict. What are your immediate troubleshooting steps?**
 First, I verify the label mapping in the training dataset to ensure legitimate sites were not inadvertently encoded as malicious. Second, I check the drift logs for extreme statistical variance indicating an extraction error. Third, I confirm the feature column JSON aligns flawlessly with the model architecture.
 
-**2. Scenario: The API responds with an invalid verdict, but no percentage confidence is shown. What layer executed this decision?**
-The deterministic DNS Guard layer intercepted the request. Because the domain yielded an NXDOMAIN or empty response, it bypassed the probabilistic machine learning layer entirely, finalizing the verdict mathematically at absolute certainty.
+**2. Scenario: The API responds with an invalid verdict, and the web UI displays a "Domain does not exist" warning. What layer executed this decision?**
+The deterministic DNS Guard layer intercepted the request. Because the domain yielded an NXDOMAIN or empty response, it bypassed the probabilistic machine learning layer entirely, finalizing the verdict mathematically at absolute certainty without rendering any confidence bar.
 
 **3. Scenario: The infrastructure object payload displays all negative ones. What does this mean?**
 This indicates a catastrophic failure of the asynchronous network collection array. The target domain likely heavily throttled the scanner, or a generalized outbound network connectivity loss occurred on the hosting server.

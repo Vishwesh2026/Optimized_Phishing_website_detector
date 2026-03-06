@@ -672,7 +672,7 @@
             <div class="verdict-icon">✅</div>
             <div>
                 <div class="verdict-title" style="color:#4ade80;">SAFE</div>
-                <div class="verdict-sub">{{ conf_pct }}% confidence — No threat detected</div>
+                <div class="verdict-sub">No threat detected</div>
             </div>
         </div>
         {% else %}
@@ -684,28 +684,16 @@
             <div class="verdict-icon">{{ v_icon }}</div>
             <div>
                 <div class="verdict-title" style="color:{{ v_color }};">PHISHING — {{ risk }} RISK</div>
-                <div class="verdict-sub">{{ conf_pct }}% phishing probability detected</div>
+                <div class="verdict-sub">Phishing probability detected</div>
             </div>
         </div>
         {% endif %}
 
-        <!-- 2 ▸ Confidence + Prediction Details -->
+        <!-- 2 ▸ Prediction Details -->
         <div class="card">
             <div class="card-title">
-                <div class="card-title-left">📊 Confidence Score</div>
+                <div class="card-title-left">📊 Prediction Details</div>
             </div>
-            <div class="bar-row">
-                <span>{{ 'Phishing Probability' if is_phishing else 'Legitimacy Confidence' if not is_invalid else
-                    'Deterministic Failure' }}</span>
-                <span class="bar-val">{{ conf_pct }}%</span>
-            </div>
-            {% set bar_c = 'safe' if not is_phishing and not is_invalid else 'danger' if risk == 'HIGH' or is_invalid
-            else 'warn' %}
-            <div class="bar-track">
-                <div class="bar-fill {{ bar_c }}" style="width:{{ conf_pct }}%"></div>
-            </div>
-
-            <hr class="section-divider">
             <div class="meta-grid">
                 <div class="meta-item">
                     <div class="lbl">Verdict</div>
@@ -746,7 +734,7 @@
                 endif %}
                 {%- if infra and infra.qty_nameservers is not none and infra.qty_nameservers > 1 %} and <strong>{{
                     infra.qty_nameservers }} name servers</strong>{% endif %}
-                . The model assigned <strong>{{ conf_pct }}% confidence</strong> with {{ risk }} risk level. No
+                . The model assigned {{ risk }} risk level. No
                 significant phishing indicators were detected.
                 {% else %}
                 {% if risk == 'HIGH' %}
@@ -762,7 +750,7 @@
                     self-signed</strong>.{% endif %}
                 {%- if di and di.whois_available and di.domain_age %} Domain age: <strong>{{ di.domain_age
                     }}</strong>.{% endif %}
-                The model flagged this URL with <strong>{{ conf_pct }}% phishing probability</strong>. Do not enter
+                The model flagged this URL with phishing probability. Do not enter
                 credentials on this site.
                 {% endif %}
             </div>
