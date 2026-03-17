@@ -1,0 +1,59 @@
+# Project Structure, Architecture, and Concepts
+
+This document outlines the key structural elements, architectural patterns, and core concepts employed within this project.
+
+## 1. Project Structure
+
+The project follows a standard modern web application structure, primarily focused on a React frontend.
+
+-   **`public/`**: Contains static assets served directly by the web server (e.g., `placeholder.svg`, `robots.txt`, `WebIcon.png`).
+-   **`src/`**: The main application source code directory.
+    -   **`assets/`**: Stores static media assets like images (`.jpeg`, `.png`, `.webp`) and videos (`.mp4`).
+    -   **`components/`**: Houses reusable React components.
+        -   **`components/ui/`**: A dedicated directory for UI components, likely generated using `shadcn/ui` based on Radix UI primitives. These are highly reusable, styled components forming the design system.
+    -   **`hooks/`**: Contains custom React hooks for encapsulating reusable logic and stateful behavior.
+    -   **`lib/`**: Utility functions and helper modules (e.g., `utils.ts` for general utilities).
+    -   **`pages/`**: Top-level components representing distinct views or routes of the application (e.g., `Index.tsx`, `NotFound.tsx`).
+    -   **`App.tsx`**: The root component of the React application.
+    -   **`main.tsx`**: The entry point for the React application, responsible for rendering `App.tsx` into the DOM.
+    -   **`index.css` / `App.css`**: Global CSS styles and component-specific styles.
+    -   **`vite-env.d.ts`**: TypeScript declaration file for Vite-specific environment variables.
+-   **Configuration Files**:
+    -   `package.json`, `bun.lockb`, `package-lock.json`: Node.js package manager configuration and lock files.
+    -   `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json`: TypeScript configuration files.
+    -   `vite.config.ts`: Vite build tool configuration.
+    -   `tailwind.config.ts`, `postcss.config.js`: Tailwind CSS and PostCSS configuration.
+    -   `eslint.config.js`: ESLint configuration for code linting.
+
+## 2. Architecture
+
+The project employs a component-based architecture, common in modern React applications, structured as a Single Page Application (SPA).
+
+-   **Component-Based UI**: The user interface is built from a hierarchy of self-contained, reusable React components.
+-   **Modular Design**: Code is organized into logical modules (components, hooks, utilities, pages) to improve maintainability and scalability.
+-   **UI Library Integration**: Utilizes `shadcn/ui`, which is built on top of Radix UI primitives and styled with Tailwind CSS, providing a robust and accessible foundation for UI elements.
+-   **Client-Side Routing**: `react-router-dom` is used for declarative routing, allowing navigation between different "pages" or views without full page reloads.
+
+## 3. Key Concepts and Technologies
+
+-   **Frontend Framework**: **React** (v18.x) for building dynamic user interfaces.
+-   **Build Tool**: **Vite** for a fast development experience and optimized production builds.
+-   **Language**: **TypeScript** for type safety and improved code quality and maintainability.
+-   **Styling**:
+    -   **Tailwind CSS**: A utility-first CSS framework for rapidly building custom designs directly in markup.
+    -   **PostCSS**: A tool for transforming CSS with JavaScript plugins, used by Tailwind CSS.
+-   **UI Component Library**:
+    -   **shadcn/ui**: A collection of reusable components (e.g., `button`, `input`, `dialog`, `accordion`) that are built with Radix UI and styled with Tailwind CSS. These components are copy-pastable into the project, allowing for full control and customization.
+    -   **Radix UI**: Low-level UI primitives that provide unstyled, accessible components.
+-   **State Management & Data Handling**:
+    -   **`@tanstack/react-query`**: For server state management, data fetching, caching, and synchronization.
+    -   **`react-hook-form`**: For efficient and flexible form management, including validation.
+    -   **`zod`**: A TypeScript-first schema declaration and validation library, often used with `react-hook-form` for form validation.
+-   **Routing**: **`react-router-dom`** for handling client-side navigation within the SPA.
+-   **Utility Libraries**:
+    -   **`clsx`**: A tiny utility for constructing `className` strings conditionally.
+    -   **`tailwind-merge`**: A utility to merge Tailwind CSS classes without style conflicts.
+    -   **`lucide-react`**: A collection of beautiful and customizable SVG icons.
+-   **Linting**: **ESLint** for enforcing code style and identifying potential issues.
+-   **Other UI/Interaction Libraries**: `sonner` (toast notifications), `react-day-picker` (date picker), `embla-carousel-react` (carousel), `recharts` (charts).
+-   **Theming**: `next-themes` for managing light/dark mode functionality.

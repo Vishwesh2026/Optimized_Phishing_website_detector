@@ -1,0 +1,19 @@
+{
+  "accuracy": 0.32,
+  "precision": 0.32,
+  "recall": 1.0,
+  "f1": 0.4848,
+  "roc_auc": 0.9986,
+  "confusion_matrix": [
+    [
+      0,
+      68
+    ],
+    [
+      0,
+      32
+    ]
+  ],
+  "sample_size": 100,
+  "evaluation_at": "2026-03-05T15:54:01"
+}
