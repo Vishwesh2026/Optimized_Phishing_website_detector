@@ -1,12 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Shield, AlertTriangle, CheckCircle, Info, Lock, Globe, Server,
   Activity, ChevronDown, ChevronUp, Clock, Brain
 } from "lucide-react";
-import { fetchMetrics } from "@/services/api";
 import type {
-  AnalyzeResponse, InfrastructureFeatures, DomainInfo,
-  MetricsResponse
+  AnalyzeResponse, InfrastructureFeatures, DomainInfo
 } from "@/types/analysis";
 import { Button } from "@/components/ui/button";
 
@@ -69,8 +67,7 @@ const AnalysisResults = ({ result, onReset }: Props) => {
       {/* 6 ▸ Domain Intelligence */}
       <DomainIntelligenceCard domainInfo={result.domain_info} />
 
-      {/* 7 ▸ Model Performance */}
-      <ModelPerformanceCard />
+
 
       {/* Reset */}
       <div className="flex justify-center pt-2">
@@ -365,80 +362,7 @@ const DomainIntelligenceCard = ({ domainInfo }: { domainInfo?: DomainInfo | null
   );
 };
 
-/* ── Model Performance ──────────────────────────────────────────────────── */
-const ModelPerformanceCard = () => {
-  const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
 
-  useEffect(() => {
-    fetchMetrics().then(setMetrics).catch(() => {/* silently hide */});
-  }, []);
-
-  if (!metrics) return null;
-
-  const bars = [
-    { name: "Accuracy",  val: metrics.accuracy },
-    { name: "Precision", val: metrics.precision },
-    { name: "Recall",    val: metrics.recall },
-    { name: "F1 Score",  val: metrics.f1 ?? metrics.f1_score },
-    { name: "ROC-AUC",   val: metrics.roc_auc },
-  ].filter(b => b.val != null);
-
-  const cm = metrics.confusion_matrix;
-
-  return (
-    <Card title="Model Performance" icon={<Server className="w-4 h-4" />}>
-      {/* Metric bars */}
-      <div className="space-y-3">
-        {bars.map(b => {
-          const pct = Math.round((b.val || 0) * 100);
-          return (
-            <div key={b.name} className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{b.name}</span>
-                <span className="font-bold text-foreground">{pct}%</span>
-              </div>
-              <div className="h-2 bg-background/50 rounded-full overflow-hidden border border-border/30">
-                <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-1000" style={{ width: `${pct}%` }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Meta grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-        <MetaItem label="Model File" value={metrics.model_file || metrics.model || "—"} small />
-        <MetaItem label="Dataset Size" value={(metrics.dataset_size || 0).toLocaleString()} />
-        <MetaItem label="Features" value={String(metrics.feature_count || metrics.n_features || 111)} />
-        <MetaItem label="Trained At" value={metrics.trained_at ? metrics.trained_at.replace("T", " ") : "—"} small />
-      </div>
-
-      {/* Confusion Matrix */}
-      {cm && cm.length === 2 && (
-        <div className="mt-4">
-          <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-2">Confusion Matrix</div>
-          <div className="grid grid-cols-2 gap-2 max-w-[280px]">
-            {[
-              { v: cm[0][0], l: "True Negative",  cls: "border-emerald-500/30" },
-              { v: cm[0][1], l: "False Positive",  cls: "border-red-500/30" },
-              { v: cm[1][0], l: "False Negative",  cls: "border-yellow-500/30" },
-              { v: cm[1][1], l: "True Positive",   cls: "border-emerald-500/30" },
-            ].map(c => (
-              <div key={c.l} className={`bg-background/50 rounded-lg p-3 text-center border ${c.cls}`}>
-                <div className="text-lg font-bold text-foreground">{c.v.toLocaleString()}</div>
-                <div className="text-[0.6rem] text-muted-foreground mt-0.5">{c.l}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="text-center text-[0.7rem] text-muted-foreground mt-4 pt-3 border-t border-border/30">
-        ⚠ Training Metrics — Not Live Accuracy &nbsp;|&nbsp; Evaluated on held-out test set
-      </div>
-    </Card>
-  );
-};
 
 /* ════════════════════════════════════════════════════════════════════════════
    Shared Primitives

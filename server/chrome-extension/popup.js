@@ -5,6 +5,7 @@
  * (written by background.js) and renders the result UI.
  *
  * Feature: Deep Analysis CTA & WHOIS Integration
+ * Feature: In-popup phishing notification banner
  */
 
 const BASE_URL = "http://127.0.0.1:8000";
@@ -33,6 +34,55 @@ function riskToBarClass(label, riskLevel, isInvalid = false) {
     if (label === 0) return "safe";
     if (riskLevel === "HIGH") return "danger";
     return "warning";
+}
+
+// ── Phishing notification banner ──────────────────────────────────────────────
+
+function showPhishingNotification(data) {
+    const container = document.getElementById("notificationContainer");
+    if (!container) return;
+
+    // Clear any existing notification
+    container.innerHTML = "";
+
+    const isInvalid = data.prediction === "invalid";
+    const isPhishing = data.label === 1;
+
+    // Only show for phishing or invalid domains
+    if (!isPhishing && !isInvalid) return;
+
+    const riskLevel = isInvalid ? "INVALID" : (data.risk_level || "HIGH");
+    const riskClass = isInvalid ? "risk-invalid"
+        : riskLevel === "HIGH" ? "risk-high"
+        : riskLevel === "MEDIUM" ? "risk-medium"
+        : "risk-low";
+
+    const icon = (isInvalid || riskLevel === "HIGH") ? "🚨" : "⚠️";
+    const title = isInvalid
+        ? "Invalid Domain Detected"
+        : `Phishing Detected — ${riskLevel} Risk`;
+    const subtitle = isInvalid
+        ? "This domain does not resolve (NXDOMAIN)"
+        : "This website has been flagged as potentially dangerous";
+
+    const banner = document.createElement("div");
+    banner.className = `phishing-notification ${riskClass}`;
+    banner.innerHTML = `
+        <div class="notif-icon">${icon}</div>
+        <div class="notif-text">
+            <div class="notif-title">${title}</div>
+            <div class="notif-sub">${subtitle}</div>
+        </div>
+        <button class="notif-dismiss" title="Dismiss">✕</button>
+    `;
+
+    container.appendChild(banner);
+
+    // Dismiss handler
+    banner.querySelector(".notif-dismiss").addEventListener("click", () => {
+        banner.classList.add("fade-out");
+        banner.addEventListener("animationend", () => banner.remove());
+    });
 }
 
 // ── Render functions ──────────────────────────────────────────────────────────
@@ -140,6 +190,9 @@ function renderResult(data) {
         const deepUrl = `${BASE_URL}/?url=${encodeURIComponent(data.url)}`;
         chrome.tabs.create({ url: deepUrl });
     });
+
+    // Show phishing notification banner if applicable
+    showPhishingNotification(data);
 }
 
 function renderError(message) {
@@ -252,3 +305,4 @@ async function main() {
 }
 
 document.addEventListener("DOMContentLoaded", main);
+
