@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeSurf — Core ML Architecture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030712;
+            --surface: #0f172a;
+            --surface-hover: #1e293b;
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.2);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: #1e293b;
+            --safe: #10b981;
+            --phishing: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 4rem 1rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 5rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .highlight-text {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Ensemble Manager Section */
+        .ensemble-hero {
+            background: radial-gradient(circle at top left, var(--accent-glow), transparent);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 3rem;
+            margin-bottom: 4rem;
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .ensemble-hero::after {
+            content: "VotingClassifier";
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            font-size: 8rem;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.03);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .hero-badge {
+            background: var(--accent-glow);
+            color: var(--accent);
+            padding: 0.5rem 1rem;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+        }
+
+        .hero-title {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-desc {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 800px;
+        }
+
+        /* Grid */
+        .model-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 5rem;
+        }
+
+        .model-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .model-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            background: var(--surface-hover);
+        }
+
+        .model-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--accent-glow);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .model-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .model-tag {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1.25rem;
+        }
+
+        .model-desc {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+        }
+
+        .model-role {
+            padding-top: 1.25rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.9rem;
+            font-style: italic;
+            color: var(--text-primary);
+        }
+
+        /* Hybrid Split */
+        .hybrid-section {
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 3rem;
+            background: linear-gradient(to right, rgba(99, 102, 241, 0.05), transparent);
+            margin-top: 2rem;
+        }
+
+        .hybrid-section h2 {
+            margin-bottom: 2rem;
+            font-size: 1.75rem;
+        }
+
+        .split-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .split-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ensemble-hero {
+                padding: 1.5rem;
+            }
+
+            header h1 {
+                font-size: 2.25rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .footer-note {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>ML Implementation Core</h1>
+            <p>A deep dive into the algorithmic backbone of <span class="highlight-text">SafeSurf v3.1</span>, detailing
+                our multi-model approach to zero-day phishing detection.</p>
+        </header>
+
+        <!-- The Manager Section -->
+        <section class="ensemble-hero">
+            <span class="hero-badge">Model Orchestrator</span>
+            <h2 class="hero-title">Unified VotingClassifier Ensemble</h2>
+            <p class="hero-desc">
+                Instead of relying on a single algorithm, SafeSurf employs a <strong>Soft-Voting Ensemble</strong>. This
+                meta-classifier aggregates the weighted probabilities from five distinct structural experts, ensuring
+                that the final verdict is robust against individual model biases and "blind spots."
+            </p>
+        </section>
+
+        <!-- Model Grid -->
+        <div class="model-grid">
+            <!-- XGBoost -->
+            <div class="model-card">
+                <div class="model-icon">📈</div>
+                <h3 class="model-name">Calibrated XGBoost</h3>
+                <p class="model-tag">The Heavy Lifter</p>
+                <p class="model-desc">Extreme Gradient Boosting that builds decision trees sequentially to correct
+                    previous errors. Integrated with Isotonic Regression for precise probability mapping.</p>
+                <p class="model-role">Primary engine for complex structural pattern matching.</p>
+            </div>
+
+            <!-- RandomForest -->
+            <div class="model-card">
+                <div class="model-icon">🌲</div>
+                <h3 class="model-name">Random Forest</h3>
+                <p class="model-tag">Robustness Specialist</p>
+                <p class="model-desc">An ensemble of independent decision trees that averages results to decrease
+                    variance and prevent overfitting on training data noise.</p>
+                <p class="model-role">Provides baseline stability and handles high-dimensional noise.</p>
+            </div>
+
+            <!-- HistGradientBoosting -->
+            <div class="model-card">
+                <div class="model-icon">⚡</div>
+                <h3 class="model-name">HistGradientBoosting</h3>
+                <p class="model-tag">Efficiency Specialist</p>
+                <p class="model-desc">Optimized for large-scale datasets, it bins continuous features into discrete
+                    intervals, making it incredibly fast for live inference loops.</p>
+                <p class="model-role">Handles the massive PhiUSIIL 235k-URL data ingestion speed.</p>
+            </div>
+
+            <!-- LinearSVC -->
+            <div class="model-card">
+                <div class="model-icon">📐</div>
+                <h3 class="model-name">LinearSVC</h3>
+                <p class="model-tag">Boundary Specialist</p>
+                <p class="model-desc">Determines the optimal hyperplane (boundary) that separates Phishing and Safe
+                    classes with the maximum possible safety margin.</p>
+                <p class="model-role">Ensures strict classification for ambiguous "edge case" URLs.</p>
+            </div>
+
+            <!-- Logistic Regression -->
+            <div class="model-card">
+                <div class="model-icon">🔗</div>
+                <h3 class="model-name">Logistic Regression</h3>
+                <p class="model-tag">Linear Specialist</p>
+                <p class="model-desc">Predicts outcomes by analyzing the linear probability relationships between input
+                    features like URL length and hyphen frequency.</p>
+                <p class="model-role">Analyzes basic, direct signals with high mathematical accuracy.</p>
+            </div>
+
+            <!-- NLP Hybrid -->
+            <div class="model-card">
+                <div class="model-icon">✍️</div>
+                <h3 class="model-name">Bag-of-Words NLP</h3>
+                <p class="model-tag">Lexical Fallback</p>
+                <p class="model-desc">A secondary Logistic Regression model that treats URLs as text tokens,
+                    specifically hunting for brand keywords and social engineering cues.</p>
+                <p class="model-role">Acts as the 35% weighted "text-aware" sanity check.</p>
+            </div>
+        </div>
+
+        <section class="hybrid-section">
+            <div class="split-grid">
+                <div>
+                    <h2>The Hybrid Fusion Flow</h2>
+                    <p style="color: var(--text-secondary);">SafeSurf splits analysis into two parallel paths. The
+                        <strong>Structural path (65%)</strong> interrogates the infrastructure while the <strong>Lexical
+                            path (35%)</strong> reads the text tokens. The final convergence happens in our soft-voting
+                        math combiner, providing a definitive risk verdict.
+                    </p>
+                </div>
+                <div
+                    style="background: var(--accent-glow); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--accent);">
+                    <p style="font-size: 0.9rem;"><strong>Implementation Note:</strong> Our migration from Stacking to
+                        VotingClassifier resolved Scikit-learn 1.6 / XGBoost 2.x attribute conflicts while preserving
+                        ensemble integrity.</p>
+                </div>
+            </div>
+        </section>
+
+        <p class="footer-note">Developed by Team Batch 16 &middot; Guided by Mr. Alla Rajendra &middot; SafeSurf
+            Security Architecture</p>
+    </div>
+</body>
+
+</html>

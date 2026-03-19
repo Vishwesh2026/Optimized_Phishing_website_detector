@@ -1,0 +1,37 @@
+# Python artefacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Jupyter / training artefacts (heavy — not needed at runtime)
+Dataset/
+experiments/
+training/
+*.ipynb
+*.csv
+
+# Secrets / env files (mount at runtime instead)
+.env
+
+# Tests
+test_*.py
+verify_imports.py
+
+# Docs / static markdown
+*.md
+*.html
+chrome-extension/
+
+# Git
+.git/
+.gitignore

@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────────────────────────
+# docker-compose.yml — SafeSurf Phishing Detection Stack
+# Services: safesurf-server (FastAPI) + safesurf-frontend (Nginx)
+# ─────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Backend ─────────────────────────────────────────────────
+  safesurf-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: safesurf-server
+    restart: unless-stopped
+    env_file:
+      - ./server/.env          # copy .env.example → .env and fill in values
+    environment:
+      API_HOST: "0.0.0.0"
+      API_PORT: "8000"
+    ports:
+      - "8000:8000"            # expose for direct access / debugging
+    volumes:
+      - ./server/models:/app/models:ro   # mount models directory (read-only)
+    networks:
+      - safesurf-net
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Frontend ─────────────────────────────────────────────────
+  safesurf-frontend:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+      args:
+        # Override if your backend is on a different public URL in production
+        VITE_API_BASE_URL: http://localhost:8000
+    container_name: safesurf-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      safesurf-server:
+        condition: service_healthy
+    networks:
+      - safesurf-net
+
+networks:
+  safesurf-net:
+    driver: bridge
