@@ -35,6 +35,7 @@ from app.schemas.prediction_schema import (
 )
 from app.services.ensemble_service import EnsembleService, get_ensemble_service
 from app.services.whois_service import get_domain_info
+from app.services.phishtank_service import check_phishtank
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -93,13 +94,19 @@ async def _run_analysis(url: str, svc: EnsembleService, is_root_check: bool = Fa
         logger.info("Deep URL detected: %s. Checking base domain first: %s", norm_url, norm_base)
         root_result = await _run_analysis(norm_base, svc, is_root_check=True)
 
-        # If the root has a valid prediction, we'll use it but still run the core analysis
-        # for the deep URL to extract its specific infrastructure/WHOIS metadata for the UI (if needed).
-        # Note: we use core analysis ONLY for features, but override the verdict.
+        # Also check the DEEP URL against PhishTank — it may be flagged even if root is safe
+        deep_phishtank = await check_phishtank(norm_url)
+
+        # If PhishTank flags the deep URL as phishing, do NOT inherit root's safe verdict
+        if deep_phishtank.get("is_phishing"):
+            logger.info("PhishTank flagged deep URL %s — overriding root-inherit logic", norm_url)
+            current_result = await _run_analysis_core(norm_url, svc)
+            return current_result
+
+        # Otherwise, run core analysis for UI metadata but inherit root verdict
         current_result = await _run_analysis_core(norm_url, svc)
 
         # APPLY OVERRIDE: Inherit verdict from root domain
-        # The user's idea: if root is legit, subfolders are legit. If root is phish, subfolders are phish.
         current_result["prediction"] = root_result["prediction"]
         current_result["label"]      = root_result["label"]
         current_result["confidence"] = root_result["confidence"]
@@ -167,10 +174,67 @@ async def _run_analysis_core(norm_url: str, svc: EnsembleService) -> dict:
                 "infrastructure": None,
                 "domain_info": None,
                 "ensemble_breakdown": None,
+                "heuristic_reasons": [],
+                "phishtank_flagged": False,
                 "degraded": False,
                 "latency_ms": total_ms,
                 "model_version": "ensemble-v1",
             }
+
+        # ══════════════════════════════════════════════════════════════════════
+        # STEP 1: Check PhishTank FIRST — deterministic database lookup
+        # If PhishTank confirms the URL is phishing, return immediately
+        # without running the expensive ML pipeline.
+        # ══════════════════════════════════════════════════════════════════════
+        try:
+            phishtank_result = await check_phishtank(norm_url)
+        except Exception as exc:
+            logger.warning("PhishTank check failed for %s: %s", norm_url, exc)
+            phishtank_result = None
+
+        if phishtank_result and phishtank_result.get("is_phishing"):
+            total_ms = round((time.perf_counter() - t_start) * 1000, 2)
+            phish_id = phishtank_result.get("phish_id")
+            logger.info(
+                "PhishTank CONFIRMED phishing for %s (phish_id=%s) — skipping ML pipeline",
+                norm_url, phish_id,
+            )
+            return {
+                "url":                norm_url,
+                "prediction":         "phishing",
+                "label":              1,
+                "confidence":         0.95,
+                "risk_level":         "HIGH",
+                "reason":             f"Confirmed phishing by PhishTank (ID: {phish_id})",
+                "infrastructure":     None,
+                "domain_info":        None,
+                "ensemble_breakdown": {
+                    "xgb_probability":      0.0,
+                    "nlp_probability":      0.0,
+                    "xgb_weight":           0.65,
+                    "nlp_weight":           0.35,
+                    "ensemble_probability": 0.0,
+                    "heuristic_boost":      0.0,
+                    "final_probability":    0.95,
+                    "phishtank_override":   True,
+                },
+                "heuristic_reasons":  [],
+                "phishtank_flagged":  True,
+                "degraded":           False,
+                "latency_ms":         total_ms,
+                "model_version":      "ensemble-v1",
+            }
+
+        # ══════════════════════════════════════════════════════════════════════
+        # STEP 2: PhishTank did NOT flag it — run the full ML ensemble
+        # Feature extraction + WHOIS concurrently, then ML inference.
+        # ══════════════════════════════════════════════════════════════════════
+        logger.info(
+            "PhishTank: URL not flagged (available=%s, in_db=%s) — running ML pipeline for %s",
+            phishtank_result.get("available") if phishtank_result else False,
+            phishtank_result.get("in_database") if phishtank_result else False,
+            norm_url,
+        )
 
         # ── Feature extraction + WHOIS concurrently ───────────────────────────
         feature_dict, whois_result = await asyncio.gather(
@@ -189,7 +253,9 @@ async def _run_analysis_core(norm_url: str, svc: EnsembleService) -> dict:
 
         # ── Ensemble inference (CPU-bound, run in thread) ─────────────────────
         try:
-            ml_result = await asyncio.to_thread(svc.predict, feature_dict, norm_url)
+            ml_result = await asyncio.to_thread(
+                svc.predict, feature_dict, norm_url, phishtank_result
+            )
         except Exception as exc:
             logger.exception("Ensemble inference failed for %s: %s", norm_url, exc)
             raise HTTPException(
@@ -210,6 +276,8 @@ async def _run_analysis_core(norm_url: str, svc: EnsembleService) -> dict:
             "infrastructure":     infra_dict or None,
             "domain_info":        whois_result if isinstance(whois_result, dict) else None,
             "ensemble_breakdown": ml_result.get("ensemble_breakdown"),
+            "heuristic_reasons":  ml_result.get("heuristic_reasons", []),
+            "phishtank_flagged":  ml_result.get("phishtank_flagged", False),
             "degraded":           False,
             "latency_ms":         total_ms,
             "model_version":      "ensemble-v1",
@@ -263,6 +331,8 @@ async def analyze(
         infrastructure=infra,
         domain_info=domain_info,
         ensemble_breakdown=breakdown,
+        heuristic_reasons=result.get("heuristic_reasons", []),
+        phishtank_flagged=result.get("phishtank_flagged", False),
         degraded=result["degraded"],
         latency_ms=result["latency_ms"],
         model_version=result["model_version"],

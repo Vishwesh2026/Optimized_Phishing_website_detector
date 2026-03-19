@@ -71,11 +71,14 @@ class InfrastructureFeatures(BaseModel):
 
 class EnsembleBreakdown(BaseModel):
     """Per-model scores and weights from the ensemble fusion step."""
-    xgb_probability:   float   # XGBoost calibrated phishing probability
-    nlp_probability:   float   # NLP (Logistic Regression) phishing probability
-    xgb_weight:        float   # Weight applied to XGBoost score
-    nlp_weight:        float   # Weight applied to NLP score
-    final_probability: float   # Weighted average = final ensemble probability
+    xgb_probability:      float   # XGBoost calibrated phishing probability
+    nlp_probability:      float   # NLP (Logistic Regression) phishing probability
+    xgb_weight:           float   # Weight applied to XGBoost score
+    nlp_weight:           float   # Weight applied to NLP score
+    ensemble_probability: Optional[float] = None  # Weighted average before boost
+    heuristic_boost:      Optional[float] = None  # Heuristic suspicion boost applied
+    final_probability:    float   # Final probability after all adjustments
+    phishtank_override:   bool    = False  # Whether PhishTank overrode the ML verdict
 
 
 # ── Unified Ensemble Analysis Response ───────────────────────────────────────
@@ -91,6 +94,8 @@ class AnalyzeResponse(BaseModel):
     infrastructure:     Optional[InfrastructureFeatures] = None
     domain_info:        Optional[DomainInfo]             = None
     ensemble_breakdown: Optional[EnsembleBreakdown]      = None  # NEW
+    heuristic_reasons:  list[str]                         = []    # URL suspicion reasons
+    phishtank_flagged:  bool                              = False # PhishTank override
     degraded:           bool  = False
     latency_ms:         float = 0.0
     model_version:      str   = "ensemble-v1"
