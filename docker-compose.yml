@@ -20,7 +20,8 @@ services:
     ports:
       - "8000:8000"            # expose for direct access / debugging
     volumes:
-      - ./server/models:/app/models:ro   # mount models directory (read-only)
+      - ./server/models:/app/models:ro          # mount models directory (read-only)
+      - ./server/experiments:/app/experiments:ro # mount experiments (metrics + plots)
     networks:
       - safesurf-net
     healthcheck:

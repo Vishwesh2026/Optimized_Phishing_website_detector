@@ -15,7 +15,6 @@ env/
 
 # Jupyter / training artefacts (heavy — not needed at runtime)
 Dataset/
-experiments/
 training/
 *.ipynb
 *.csv

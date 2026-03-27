@@ -36,9 +36,10 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 
 # Copy application source (exclude heavy dirs via .dockerignore)
-COPY app/        ./app/
-COPY models/     ./models/
-COPY templates/  ./templates/
+COPY app/          ./app/
+COPY models/       ./models/
+COPY templates/    ./templates/
+COPY experiments/  ./experiments/
 
 # Copy example env — real secrets should be mounted or passed as env vars
 COPY .env.example .env.example
