@@ -175,6 +175,28 @@ docker compose up --build safesurf-server
 
 ---
 
+## 💡 Lifecycle & Management Tips
+
+Once your containers are running, here are some common scenarios you might encounter:
+
+> [!TIP]
+> **What to do after containers are "Up"?**
+> - **Verify status:** Check if both containers are healthy with `docker compose ps`.
+> - **Access the UI:** Open `http://localhost` in your browser.
+> - **Monitor logs:** If something doesn't work, run `docker compose logs -f` to see real-time error messages from the backend or frontend.
+
+> [!IMPORTANT]
+> **What if I accidentally deleted a container?**
+> Don't worry! If you delete a container via Docker Desktop or the CLI, simply run the `docker compose up -d` command again in your project folder. Docker will detect the missing container and **automatically recreate it** based on your configuration.
+
+> [!NOTE]
+> **How to stop and use again later?**
+> - **To Pause (Save Resources):** Use `docker compose stop`. This stops the processes but keeps the containers on disk. You can resume instantly with `docker compose start`.
+> - **To Clean Up (Standard):** Use `docker compose down`. This stops and removes the containers entirely. Use this when you're done for the day.
+> - **To Restart:** Run `docker compose restart` if you just want to reboot the services without rebuilding anything.
+
+---
+
 ## ⚙️ Environment Variables
 
 All configuration is safely done through `server/.env` (Dev Mode) or the `environment:` block (Prebuilt Images Mode). Here are the key variables:
